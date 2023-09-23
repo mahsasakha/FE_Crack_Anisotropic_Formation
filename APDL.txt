@@ -1,0 +1,314 @@
+*DO,COUNT,0,5,1
+PARSAV, SCALAR, COUNT
+FINISH
+/CLEAR,NOSTART  
+PARRES, NEW, COUNT
+/CWD, 'C:\path\to\DATA\MATERIAL_5'
+
+/PREP7  
+
+PI=3.1415926535897932384626433832795
+
+*DIM,Par_St,TABLE,6,2,1
+*TREAD, Par_St, Initiation_Pressure,csv
+*DIM,P_MATERIAL,array,6  
+St_Tensile =5.618*1e6 !Pa   
+P_MATERIAL(1)=St_Tensile*Par_St(0,0)
+P_MATERIAL(2)=St_Tensile*Par_St(1,0)
+P_MATERIAL(3)=St_Tensile*Par_St(2,0)
+P_MATERIAL(4)=St_Tensile*Par_St(3,0)
+P_MATERIAL(5)=St_Tensile*Par_St(4,0)
+P_MATERIAL(6)=St_Tensile*Par_St(5,0)
+
+Unit= 1000
+LEN_2= 150000/ Unit
+LEN_1= 50000/ Unit
+R=80/ Unit
+R_Tip=98/ Unit
+R_In1=150/ Unit
+R_In2=3000/ Unit
+ROT=75-15*COUNT
+
+
+
+
+LOCAL,11,CYLIN,0,0,0,0,0,0
+CSYS,11
+CLOCAL,12,0,0,0,0,-ROT
+CSYS,12
+
+S_1=6.5e6
+S_2=13.1e6
+Pressure=P_MATERIAL(COUNT+1)
+S1= (S_1+S_2)/2 +(S_1-S_2)*COS(2*ROT*PI/180)/2
+S2= (S_1+S_2)/2 -(S_1-S_2)*COS(2*ROT*PI/180)/2
+S12= -(S_2-S_1)*SIN(2*ROT*PI/180)/2
+
+
+Z=0
+K,1,LEN_1/2, LEN_2/2, Z
+K,2,-LEN_1/2,LEN_2/2,Z
+K,3,-LEN_1/2,-LEN_2/2,Z
+K,4, LEN_1/2,-LEN_2/2,Z
+
+K,5,0,0,0
+
+L,1,2
+L,2,3
+L,3,4
+L,4,1
+
+CSYS,11
+
+CIRCLE,5,R
+CIRCLE,5,R_In1
+CIRCLE,5,R_In2
+
+AL,1,2,3,4
+AL,5,6,7,8
+ASBA,1,2
+
+LSEL,S,LINE,,9,12
+ASBL,3,All
+ALLSEL,ALL
+LSEL,S,LINE,,13,16
+ASBL,1,All
+
+
+*DIM,Par_MAT,TABLE,9,2,1
+*TREAD, Par_MAT, parameters_MAT,csv
+EX=Par_MAT(0,0)
+EY=Par_MAT(1,0)
+EZ=Par_MAT(2,0)
+NUXY=Par_MAT(3,0)
+NUXZ=Par_MAT(4,0)
+NUYZ=Par_MAT(5,0)
+GXY=Par_MAT(6,0)
+GYZ=Par_MAT(7,0)
+GXZ=Par_MAT(8,0)
+
+ET, 1, PLANE183, 1, , 0, , , , 
+!R,1,1/ Unit, 
+
+ESYS,0
+TB, ELASTIC, 1, , 9,OELM
+TBDATA,1,EX
+TBDATA,2,EY
+TBDATA,3,EZ
+TBDATA,4,GXY
+TBDATA,5,GYZ
+TBDATA,6,GXZ
+TBDATA,7,NUXY
+TBDATA,8,NUYZ
+TBDATA,9,NUXZ
+
+
+
+
+ALLSEL,ALL
+LSEL,S,LINE,,1,4
+LESIZE,ALL,,,20,1,1,
+
+ALLSEL,ALL
+LSEL,S,LINE,,5,8
+LESIZE,ALL,,,60,1,1,
+
+ALLSEL,ALL
+LSEL,S,LINE,,9,12
+LESIZE,ALL,,,120,1,1,
+ 
+ALLSEL,ALL
+LSEL,S,LINE,,13,16
+LESIZE,ALL,,,60,1,1,
+
+ALLSEL,ALL
+AMESH,ALL
+
+ALLSEL,ALL
+CSYS,12
+ALLSEL,ALL
+NSEL,S,LOC,Z,0
+NROTAT, All
+
+
+CSYS,12
+ALLSEL,ALL
+NSEL,S,LOC,X,LEN_2/2-0.000000001,LEN_2/2+0.00000001
+NSEL,R,LOC,Y,LEN_2/2-0.000000001,LEN_2/2+0.00000001
+CM,node_F,NODE
+*GET, node_F, NODE, 0, NUM,MIN
+
+
+ALLSEL,ALL
+
+
+FINISH
+/SOLU
+
+ANTYPE,0
+ALLSEL,ALL
+LSEL,S,LINE,,2
+NSLL,s,1
+*GET, Par_2, NODE, 0, COUNT
+SF,ALL,PRES,S_2
+
+
+
+ALLSEL,ALL
+LSEL,S,LINE,,4
+NSLL,s,1
+SF,ALL,PRES,S_2
+
+
+ALLSEL,ALL
+LSEL,S,LINE,,1
+NSLL,s,1
+D,ALL,UY,0
+
+
+
+
+ALLSEL,ALL,
+D,node_F,UX,0
+
+ALLSEL,ALL
+LSEL,S,LINE,,1,
+NSLL,s,1
+*GET, Par_1, NODE, 0, COUNT
+!SF,ALL,PRES,S_1
+
+
+
+ALLSEL,ALL
+LSEL,S,LINE,,3
+NSLL,s,1
+SF,ALL,PRES,S_1
+
+
+
+
+ALLSEL,ALL
+LSEL,S,LINE,,5,8
+NSLL,s,1
+SF,ALL,PRES,Pressure
+
+
+
+
+ALLSEL,ALL
+
+
+SOLVE
+FINISH
+
+/POST1
+
+n_div=4500
+*DIM,R_PATH,array,28
+R_PATH(1)=104.5/ Unit
+R_PATH(2)=104/ Unit
+R_PATH(3)=103.5/ Unit 
+R_PATH(4)=103/ Unit
+R_PATH(5)=102.8/ Unit
+R_PATH(6)=102.6/ Unit
+R_PATH(7)=102.4/ Unit   
+R_PATH(8)=102.2/Unit
+R_PATH(9)=102/ Unit
+R_PATH(10)=101.75/ Unit
+R_PATH(11)=101.5/ Unit
+R_PATH(12)=101.25/ Unit
+R_PATH(13)=101/ Unit
+R_PATH(14)=100.8/ Unit
+R_PATH(15)=100.6/ Unit
+R_PATH(16)=100.4/ Unit
+R_PATH(17)=100.2/ Unit
+R_PATH(18)=100/ Unit
+R_PATH(19)=99.75/ Unit
+R_PATH(20)=99.5/ Unit
+R_PATH(21)=99.25/ Unit
+R_PATH(22)=99/ Unit
+R_PATH(23)=98.75/ Unit
+R_PATH(24)=98.5/ Unit
+R_PATH(25)=98.25/ Unit
+R_PATH(26)=98/ Unit
+R_PATH(27)=97/ Unit
+R_PATH(28)=96/ Unit
+
+
+
+
+*DIM,Vector_PATH,array,n_div+1
+
+*DO,i,1,28
+
+ALLSEL,ALL
+PATH,P%i%,2,,n_div
+PPATH,1,,R_PATH(i)*SIN(-ROT*PI/180),-R_PATH(i)*COS(-ROT*PI/180),0,11
+PPATH,2,,R_PATH(i)*COS((90-ROT)*PI/180),R_PATH(i)*SIN((90-ROT)*PI/180),0,11
+RSYS,11
+PDEF,,S,Y
+PLPATH,,,,,SY
+PAGET,ARRAY_%i%,TABLE
+
+
+*DO,j,1,n_div+1
+Vector_PATH(j)=R_PATH(i)
+*ENDDO
+
+*cfopen,Normal_stress_%ROT%_%i%,csv             !Write results to Temperature_curves.csv 
+*VWRITE,Vector_PATH(1),',',ARRAY_%i%(1,4),',',ARRAY_%i%(1,5) 
+(F,A,F,A,F15.0)
+*CFCLOS
+ 
+ALLSEL,ALL
+RSYS,0
+ALLSEL,ALL
+NSLA,s
+ESLN,s
+ETABLE,my_sendE,SEND,ELASTIC
+etable, my_volu, volu ! element volume
+smult, my_seneE, my_sendE, my_volu, 1, 1
+SSUM
+*GET,stiffness_energy, SSUM,0,ITEM,my_seneE
+
+
+ALLSEL,ALL
+NSLA,s
+ESLN,s
+ETABLE,S1,S,X
+ETABLE,E1,EPEL,X
+smult, SNX, S1, E1, 1/2, 1
+
+
+ETABLE,S2,S,Y
+ETABLE,E2,EPEL,Y
+smult, SNY, S2, E2, 1/2, 1
+
+SADD,sendEnoTau,SNX,SNY,1,1,0
+
+ETABLE,S3,S,XY
+ETABLE,E3,EPEL,XY
+smult, SNZ, S3, E3, 1/2, 1
+
+SADD,sendETau,SNZ,sendEnoTau,1,1,0
+etable, my_volu, volu ! element volume
+smult, seneETau, sendETau, my_volu, 1, 1
+SSUM
+*GET,stiffness_energy_2nd, SSUM,0,ITEM, seneETau
+
+DIFF= stiffness_energy_2nd-stiffness_energy
+
+
+*cfopen,Energy_Crack_free_%ROT%,csv                !Write results to Temperature_curves.csv 
+*VWRITE,stiffness_energy_2nd
+(F) 
+*CFCLOS 
+*ENDDO
+
+
+*cfopen,Energy_No_DIFF_%ROT%,csv                !Write results to Temperature_curves.csv 
+*VWRITE,DIFF
+(F)
+*CFCLOS 
+
+*ENDDO
